@@ -50,6 +50,7 @@ static uint8_t is_initialized = 0;
 static void agile_led_default_compelete_callback(agile_led_t *led)
 {
     RT_ASSERT(led);
+    LOG_D("led pin:%d compeleted.", led->pin);
 }
 
 /**
@@ -173,10 +174,13 @@ int agile_led_delete(agile_led_t *led)
 int agile_led_start(agile_led_t *led)
 { 
     RT_ASSERT(led);
-    RT_ASSERT(led->light_arr);
-    RT_ASSERT(led->arr_num != 0);
     rt_mutex_take(lock_mtx, RT_WAITING_FOREVER);
     if(led->active)
+    {
+        rt_mutex_release(lock_mtx);
+        return -RT_ERROR;
+    }
+    if((led->light_arr == RT_NULL) || (led->arr_num == 0))
     {
         rt_mutex_release(lock_mtx);
         return -RT_ERROR;
@@ -226,16 +230,18 @@ int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t l
 {
     RT_ASSERT(led);
     rt_mutex_take(lock_mtx, RT_WAITING_FOREVER);
-    if(led->light_arr)
-    {
-        rt_free(led->light_arr);
-        led->light_arr = RT_NULL;
-    }
-    led->arr_num = 0;
+    
     if (light_mode)
     {
+        if (led->light_arr)
+        {
+            rt_free(led->light_arr);
+            led->light_arr = RT_NULL;
+        }
+        led->arr_num = 0;
         if (agile_led_get_light_arr(led, light_mode) < 0)
         {
+            agile_led_stop(led);
             rt_mutex_release(lock_mtx);
             return -RT_ERROR;
         }

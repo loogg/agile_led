@@ -36,7 +36,7 @@ agile_led package 遵循 LGPLv2.1 许可，详见 `LICENSE` 文件。
 ```
 RT-Thread online packages
     peripheral libraries and drivers --->
-        [*] A agile led package
+        [*] agile_led: A agile led package
 ```
 
 然后让 RT-Thread 的包管理器自动更新，或者使用 `pkgs --update` 命令更新包到 BSP 中。
@@ -177,7 +177,7 @@ void agile_led_off(agile_led_t *led);
 ## 4、注意事项
 
 1. 调用 `agile_led_create` API创建完led对象后，调用其他API确保led对象创建成功，否则被断言。
-2. 调用 `agile_led_create` 和 `agile_led_set_light_mode` API时，参数 `light_mode` 可以为RT_NULL，但是在调用 `agile_led_start` 前确保模式设置成功，否则被断言。
+2. 调用 `agile_led_create` 和 `agile_led_set_light_mode` API时，参数 `light_mode` 可以为RT_NULL。
 3. `light_mode` 确保时字符串形式，如 `"100,50,10,60"` 或 `"100,50,10,60,"` ,只支持正整数，按照亮灭亮灭...规律。
 
 ## 5、联系方式 & 感谢
