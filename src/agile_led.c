@@ -153,6 +153,7 @@ int agile_led_delete(agile_led_t *led)
     RT_ASSERT(led);
     rt_mutex_take(lock_mtx, RT_WAITING_FOREVER);
     rt_slist_remove(&(agile_led_list), &(led->slist));
+    led->slist.next = RT_NULL;
     rt_mutex_release(lock_mtx);
     if(led->light_arr)
     {
@@ -211,6 +212,7 @@ int agile_led_stop(agile_led_t *led)
         return RT_EOK;
     }
     rt_slist_remove(&(agile_led_list), &(led->slist));
+    led->slist.next = RT_NULL;
     led->active = 0;
     rt_mutex_release(lock_mtx);
     return RT_EOK;
