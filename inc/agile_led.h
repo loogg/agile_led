@@ -7,14 +7,20 @@
 extern "C" {
 #endif
 
+typedef struct agile_led_pin
+{
+    rt_base_t pin;                                   // 控制引脚
+    rt_base_t active_logic;                          // 有效电平(PIN_HIGH/PIN_LOW)
+    rt_slist_t slist;
+}pin_node_t;
+
 // agile_led 结构体
 typedef struct agile_led agile_led_t;
 
 struct agile_led
 {
     uint8_t active;                                  // 激活标志
-    rt_base_t pin;                                   // 控制引脚
-    rt_base_t active_logic;                          // 有效电平(PIN_HIGH/PIN_LOW)
+    rt_slist_t pin_slist;
     uint32_t *light_arr;                             // 闪烁数组
     uint32_t arr_num;                                // 数组元素数目
     uint32_t arr_index;                              // 数组索引
@@ -26,9 +32,14 @@ struct agile_led
 };
 
 // 创建led对象
-agile_led_t *agile_led_create(rt_base_t pin, rt_base_t active_logic, const char *light_mode, int32_t loop_cnt);
+agile_led_t *agile_led_create_add(rt_base_t pin ,rt_base_t active_logic, const char *light_mode, int32_t loop_cnt);
+agile_led_t *agile_led_create(const char *light_mode, int32_t loop_cnt);
 // 删除led对象
 int agile_led_delete(agile_led_t *led);
+//添加pin
+int agile_led_add_pin(agile_led_t *led,rt_base_t pin, rt_base_t active_logic);
+//删除pin
+int agile_led_del_pin(agile_led_t *led,rt_base_t pin);
 // 启动led对象,根据设置的模式执行动作
 int agile_led_start(agile_led_t *led);
 // 停止led对象

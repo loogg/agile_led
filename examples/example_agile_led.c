@@ -1,5 +1,5 @@
-#include <agile_led.h>
 #include <drv_gpio.h>
+#include <packages/agile_led-my/inc/agile_led.h>
 #include <stdlib.h>
 #ifdef RT_USING_FINSH
 #include <finsh.h>
@@ -17,17 +17,17 @@ static void led_create(void)
 {
     if(led0 == RT_NULL)
     {
-        led0 = agile_led_create(LED0_PIN, PIN_LOW, "100,200", -1);
+        led0 = agile_led_create_add(LED0_PIN, PIN_LOW, "100,200", -1);
     }
 
     if(led1 == RT_NULL)
     {
-        led1 = agile_led_create(LED1_PIN, PIN_LOW, "200,100", -1);
+        led1 = agile_led_create_add(LED1_PIN, PIN_LOW, "200,100", -1);
     }
 
     if(led2 == RT_NULL)
     {
-        led2 = agile_led_create(LED2_PIN, PIN_LOW, "100,100", -1);
+        led2 = agile_led_create_add(LED2_PIN, PIN_LOW, "100,100", -1);
     }
 }
 
