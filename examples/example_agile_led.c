@@ -1,5 +1,5 @@
 #include <drv_gpio.h>
-#include <packages/agile_led-my/inc/agile_led.h>
+#include <agile_led.h>
 #include <stdlib.h>
 #ifdef RT_USING_FINSH
 #include <finsh.h>
