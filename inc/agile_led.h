@@ -28,6 +28,7 @@ struct agile_led
     int32_t loop_cnt;                                // 循环次数计数
     rt_tick_t tick_timeout;                          // 超时时间
     void (*compelete)(agile_led_t *led);             // 操作完成回调函数
+    void (*change)(int flg);                // 引脚变化回调函数
     rt_slist_t slist;                                // 单向链表节点
 };
 
@@ -48,6 +49,7 @@ int agile_led_stop(agile_led_t *led);
 int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t loop_cnt);
 // 设置led对象操作完成的回调函数
 int agile_led_set_compelete_callback(agile_led_t *led, void (*compelete)(agile_led_t *led));
+int agile_led_set_change_callback(agile_led_t *led, void (*change)(int flg));
 // led对象电平翻转
 void agile_led_toggle(agile_led_t *led);
 // led对象亮

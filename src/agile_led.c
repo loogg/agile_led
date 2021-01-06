@@ -129,6 +129,7 @@ agile_led_t *agile_led_create(const char *light_mode, int32_t loop_cnt)
     led->loop_cnt = led->loop_init;
     led->tick_timeout = rt_tick_get();
     led->compelete = agile_led_default_compelete_callback;
+    led->change = RT_NULL;
     rt_slist_init(&(led->slist));
     rt_slist_init(&(led->pin_slist));
 
@@ -292,6 +293,7 @@ int agile_led_stop(agile_led_t *led)
         rt_mutex_release(lock_mtx);
         return RT_EOK;
     }
+    agile_led_off(led);
     rt_slist_remove(&(agile_led_list), &(led->slist));
     led->slist.next = RT_NULL;
     led->active = 0;
@@ -354,6 +356,16 @@ int agile_led_set_compelete_callback(agile_led_t *led, void (*compelete)(agile_l
     return RT_EOK;
 }
 
+int agile_led_set_change_callback(agile_led_t *led, void (*change)(int flg))
+{
+    RT_ASSERT(led);
+    rt_mutex_take(lock_mtx, RT_WAITING_FOREVER);
+    led->change = change;
+    rt_mutex_release(lock_mtx);
+    return RT_EOK;
+}
+
+
 /**
  * Name:             agile_led_toggle
  * Brief:            led对象电平翻转
@@ -391,6 +403,11 @@ void agile_led_on(agile_led_t *led)
         rt_pin_write(pin_node->pin, pin_node->active_logic);
     }
     rt_mutex_release(lock_mtx);
+
+    if(led->change)
+    {
+        led->change(1);
+    }
 }
 
 /**
@@ -411,6 +428,10 @@ void agile_led_off(agile_led_t *led)
         rt_pin_write(pin_node->pin, !pin_node->active_logic);
     }
     rt_mutex_release(lock_mtx);
+    if(led->change)
+    {
+        led->change(0);
+    }
 }
 
 /**
