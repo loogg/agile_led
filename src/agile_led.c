@@ -25,6 +25,7 @@
 /** @defgroup RT_Thread_DBG_Configuration RT-Thread DBG Configuration
  * @{
  */
+
 /** @name RT-Thread DBG 功能配置
  * @{
  */
@@ -40,6 +41,7 @@
 /**
  * @}
  */
+
 /**
  * @}
  */
@@ -47,6 +49,7 @@
 /** @defgroup AGILE_LED_Configuration Agile Led Configuration
  * @{
  */
+
 /** @name Agile Led 配置
  * @{
  */
@@ -60,6 +63,7 @@
 /**
  * @}
  */
+
 /**
  * @}
  */
@@ -398,4 +402,11 @@ static int agile_led_init(void)
     is_initialized = 1;
     return RT_EOK;
 }
+
+/** @addtogroup RT_Thread_Auto_Init_APP
+ * @{
+ */
 INIT_APP_EXPORT(agile_led_init);
+/**
+ * @}
+ */

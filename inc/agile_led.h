@@ -29,6 +29,9 @@ extern "C" {
 #include <rtthread.h>
 #include <stdint.h>
 
+/** @defgroup AGILE_LED_Exported_Types Agile Led Exported Types
+ * @{
+ */
 typedef struct agile_led agile_led_t; /**< Agile Led 结构体 */
 
 /**
@@ -47,7 +50,13 @@ struct agile_led {
     void (*compelete)(agile_led_t *led); /**< 操作完成回调函数 */
     rt_slist_t slist;                    /**< 单向链表节点 */
 };
+/**
+ * @}
+ */
 
+/** @defgroup AGILE_LED_Exported_Functions Agile Led Exported Functions
+ * @{
+ */
 agile_led_t *agile_led_create(rt_base_t pin, rt_base_t active_logic, const char *light_mode, int32_t loop_cnt);
 int agile_led_delete(agile_led_t *led);
 int agile_led_start(agile_led_t *led);
@@ -57,6 +66,25 @@ int agile_led_set_compelete_callback(agile_led_t *led, void (*compelete)(agile_l
 void agile_led_toggle(agile_led_t *led);
 void agile_led_on(agile_led_t *led);
 void agile_led_off(agile_led_t *led);
+/**
+ * @}
+ */
+
+/** @defgroup RT_Thread_Auto_Init RT-Thread Auto Init
+ * @{
+ */
+
+/** @defgroup RT_Thread_Auto_Init_APP RT-Thread Auto Init APP
+ * @{
+ */
+
+/**
+ * @}
+ */
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }
