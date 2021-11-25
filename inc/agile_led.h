@@ -2,14 +2,8 @@
  * @file    agile_led.h
  * @brief   Agile Led 软件包头文件
  * @author  马龙伟 (2544047213@qq.com)
- * @version 1.0
+ * @version 1.1
  * @date    2021-11-24
- *
- * @par 修改日志:
- * <table>
- * <tr><th>日期       <th>版本    <th>作者      <th>描述
- * <tr><td>2021-11-24 <td>1.0     <td>马龙伟     <td>添加 Doxygen 标准注释
- * </table>
  *
  * @attention
  *
@@ -39,8 +33,8 @@ typedef struct agile_led agile_led_t; /**< Agile Led 结构体 */
  */
 struct agile_led {
     uint8_t active;                      /**< 激活标志 */
-    rt_base_t pin;                       /**< 控制引脚 */
-    rt_base_t active_logic;              /**< 有效电平 (PIN_HIGH/PIN_LOW) */
+    uint32_t pin;                        /**< 控制引脚 */
+    uint32_t active_logic;               /**< 有效电平 (PIN_HIGH/PIN_LOW) */
     uint32_t *light_arr;                 /**< 闪烁数组 */
     uint32_t arr_num;                    /**< 数组元素数目 */
     uint32_t arr_index;                  /**< 数组索引 */
@@ -57,7 +51,7 @@ struct agile_led {
 /** @defgroup AGILE_LED_Exported_Functions Agile Led Exported Functions
  * @{
  */
-agile_led_t *agile_led_create(rt_base_t pin, rt_base_t active_logic, const char *light_mode, int32_t loop_cnt);
+agile_led_t *agile_led_create(uint32_t pin, uint32_t active_logic, const char *light_mode, int32_t loop_cnt);
 int agile_led_delete(agile_led_t *led);
 int agile_led_start(agile_led_t *led);
 int agile_led_stop(agile_led_t *led);

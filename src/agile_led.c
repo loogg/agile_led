@@ -2,14 +2,8 @@
  * @file    agile_led.c
  * @brief   Agile Led 软件包源文件
  * @author  马龙伟 (2544047213@qq.com)
- * @version 1.0
+ * @version 1.1
  * @date    2021-11-24
- *
- * @par 修改日志:
- * <table>
- * <tr><th>日期       <th>版本    <th>作者      <th>描述
- * <tr><td>2021-11-24 <td>1.0     <td>马龙伟     <td>添加 Doxygen 标准注释
- * </table>
  *
  * @attention
  *
@@ -148,7 +142,7 @@ static int agile_led_get_light_arr(agile_led_t *led, const char *light_mode)
  * - !=RT_NULL:Agile Led 对象指针
  * - RT_NULL:异常
  */
-agile_led_t *agile_led_create(rt_base_t pin, rt_base_t active_logic, const char *light_mode, int32_t loop_cnt)
+agile_led_t *agile_led_create(uint32_t pin, uint32_t active_logic, const char *light_mode, int32_t loop_cnt)
 {
     if (!is_initialized) {
         LOG_E("Agile led haven't initialized!");

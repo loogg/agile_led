@@ -44,140 +44,18 @@ RT-Thread online packages
 
 ## 3、使用 Agile Led
 
-在打开 Agile Led package 后，当进行 bsp 编译时，它会被加入到 bsp 工程中进行编译。
+- 在打开 Agile Led package 后，当进行 bsp 编译时，它会被加入到 bsp 工程中进行编译。
+- 文档请查看 [doc/doxygen/Agile_Led.chm](./doc/doxygen/Agile_Led.chm)
 
-### 3.1、API 说明
-
-1. 创建 Agile Led 对象
-
-```C
-agile_led_t *agile_led_create(rt_base_t pin, rt_base_t active_logic, const char *light_mode, int32_t loop_cnt);
-```
-
-|参数|注释|
-|----|----|
-|pin|控制 led 的引脚|
-|active_logic|led 有效电平 (PIN_HIGH/PIN_LOW)|
-|light_mode|闪烁模式字符串|
-|loop_cnt|循环次数 (负数为永久循环)|
-
-|返回|注释|
-|----|----|
-|!=RT_NULL|Agile Led 对象指针|
-|RT_NULL|异常|
-
-2. 删除 Agile Led 对象
-
-```C
-int agile_led_delete(agile_led_t *led);
-```
-
-|参数|注释|
-|----|----|
-|led|Agile Led 对象指针|
-
-|返回|注释|
-|----|----|
-|RT_EOK|成功|
-
-3. 启动 Agile Led 对象,根据设置的模式执行动作
-
-```C
-int agile_led_start(agile_led_t *led);
-```
-
-|参数|注释|
-|----|----|
-|led|Agile Led 对象指针|
-
-|返回|注释|
-|----|----|
-|RT_EOK|成功|
-|!=RT_OK|异常|
-
-4. 停止 Agile Led 对象
-
-```C
-int agile_led_stop(agile_led_t *led);
-```
-
-|参数|注释|
-|----|----|
-|led|Agile Led 对象指针|
-
-|返回|注释|
-|----|----|
-|RT_EOK|成功|
-
-5. 设置 Agile Led 对象的模式
-
-```C
-int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t loop_cnt);
-```
-
-|参数|注释|
-|----|----|
-|led|Agile Led 对象指针|
-|light_mode|闪烁模式字符串|
-|loop_cnt|循环次数 (负数为永久循环)|
-
-|返回|注释|
-|----|----|
-|RT_EOK|成功|
-|!=RT_EOK|异常|
-
-6. 设置 Agile Led 对象操作完成的回调函数
-
-```C
-int agile_led_set_compelete_callback(agile_led_t *led, void (*compelete)(agile_led_t *led));
-```
-
-|参数|注释|
-|----|----|
-|led|Agile Led 对象指针|
-|compelete|操作完成回调函数|
-
-|返回|注释|
-|----|----|
-|RT_EOK|成功|
-
-7. Agile Led 对象电平翻转
-
-```C
-void agile_led_toggle(agile_led_t *led);
-```
-
-|参数|注释|
-|----|----|
-|led|Agile Led 对象指针|
-
-8. Agile Led 对象亮
-
-```C
-void agile_led_on(agile_led_t *led);
-```
-
-|参数|注释|
-|----|----|
-|led|Agile Led 对象指针|
-
-9. Agile Led 对象灭
-
-```C
-void agile_led_off(agile_led_t *led);
-```
-
-|参数|注释|
-|----|----|
-|led|Agile Led 对象指针|
-
-### 3.2、示例
+### 3.1、示例
 
 使用示例在 [examples](./examples) 下。
 
-### 3.3、Doxygen 文档生成
+### 3.2、Doxygen 文档生成
 
-使用 `Doxywizard` 打开 [Doxyfile](./doc/doxygen/Doxyfile) 运行，生成的文件在 [doxygen/output](./doc/doxygen/output) 下。
+- 使用 `Doxywizard` 打开 [Doxyfile](./doc/doxygen/Doxyfile) 运行，生成的文件在 [doxygen/output](./doc/doxygen/output) 下。
+- 需要更改 `Graphviz` 路径。
+- `HTML` 生成未使用 `chm` 格式的，如果使能需要更改 `hhc.exe` 路径。
 
 ## 4、注意事项
 
