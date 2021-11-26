@@ -19,8 +19,8 @@
 extern "C" {
 #endif
 
-#include <rtdevice.h>
 #include <rtthread.h>
+#include <rtdevice.h>
 #include <stdint.h>
 
 /** @defgroup AGILE_LED_Exported_Types Agile Led Exported Types

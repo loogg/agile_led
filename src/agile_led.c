@@ -65,9 +65,9 @@
 /** @defgroup AGILE_LED_Private_Variables Agile Led Private Variables
  * @{
  */
-static rt_slist_t agile_led_list = RT_SLIST_OBJECT_INIT(agile_led_list); /**< Agile Led 链表头节点 */
-static rt_mutex_t lock_mtx = RT_NULL;                                    /**< Agile Led 互斥锁 */
-static uint8_t is_initialized = 0;                                       /**< Agile Led 初始化完成标志 */
+static rt_slist_t _slist_head = RT_SLIST_OBJECT_INIT(_slist_head);       /**< Agile Led 链表头节点 */
+static rt_mutex_t _mtx = RT_NULL;                                        /**< Agile Led 互斥锁 */
+static uint8_t _is_init = 0;                                       /**< Agile Led 初始化完成标志 */
 /**
  * @}
  */
@@ -144,8 +144,8 @@ static int agile_led_get_light_arr(agile_led_t *led, const char *light_mode)
  */
 agile_led_t *agile_led_create(uint32_t pin, uint32_t active_logic, const char *light_mode, int32_t loop_cnt)
 {
-    if (!is_initialized) {
-        LOG_E("Agile led haven't initialized!");
+    if (!_is_init) {
+        LOG_E("Agile Led haven't initialized!");
         return RT_NULL;
     }
     agile_led_t *led = (agile_led_t *)rt_malloc(sizeof(agile_led_t));
@@ -183,10 +183,10 @@ agile_led_t *agile_led_create(uint32_t pin, uint32_t active_logic, const char *l
 int agile_led_delete(agile_led_t *led)
 {
     RT_ASSERT(led);
-    rt_mutex_take(lock_mtx, RT_WAITING_FOREVER);
-    rt_slist_remove(&(agile_led_list), &(led->slist));
+    rt_mutex_take(_mtx, RT_WAITING_FOREVER);
+    rt_slist_remove(&_slist_head, &(led->slist));
     led->slist.next = RT_NULL;
-    rt_mutex_release(lock_mtx);
+    rt_mutex_release(_mtx);
     if (led->light_arr) {
         rt_free(led->light_arr);
         led->light_arr = RT_NULL;
@@ -205,21 +205,21 @@ int agile_led_delete(agile_led_t *led)
 int agile_led_start(agile_led_t *led)
 {
     RT_ASSERT(led);
-    rt_mutex_take(lock_mtx, RT_WAITING_FOREVER);
+    rt_mutex_take(_mtx, RT_WAITING_FOREVER);
     if (led->active) {
-        rt_mutex_release(lock_mtx);
+        rt_mutex_release(_mtx);
         return -RT_ERROR;
     }
     if ((led->light_arr == RT_NULL) || (led->arr_num == 0)) {
-        rt_mutex_release(lock_mtx);
+        rt_mutex_release(_mtx);
         return -RT_ERROR;
     }
     led->arr_index = 0;
     led->loop_cnt = led->loop_init;
     led->tick_timeout = rt_tick_get();
-    rt_slist_append(&(agile_led_list), &(led->slist));
+    rt_slist_append(&_slist_head, &(led->slist));
     led->active = 1;
-    rt_mutex_release(lock_mtx);
+    rt_mutex_release(_mtx);
     return RT_EOK;
 }
 
@@ -232,15 +232,15 @@ int agile_led_start(agile_led_t *led)
 int agile_led_stop(agile_led_t *led)
 {
     RT_ASSERT(led);
-    rt_mutex_take(lock_mtx, RT_WAITING_FOREVER);
+    rt_mutex_take(_mtx, RT_WAITING_FOREVER);
     if (!led->active) {
-        rt_mutex_release(lock_mtx);
+        rt_mutex_release(_mtx);
         return RT_EOK;
     }
-    rt_slist_remove(&(agile_led_list), &(led->slist));
+    rt_slist_remove(&_slist_head, &(led->slist));
     led->slist.next = RT_NULL;
     led->active = 0;
-    rt_mutex_release(lock_mtx);
+    rt_mutex_release(_mtx);
     return RT_EOK;
 }
 
@@ -256,7 +256,7 @@ int agile_led_stop(agile_led_t *led)
 int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t loop_cnt)
 {
     RT_ASSERT(led);
-    rt_mutex_take(lock_mtx, RT_WAITING_FOREVER);
+    rt_mutex_take(_mtx, RT_WAITING_FOREVER);
 
     if (light_mode) {
         if (led->light_arr) {
@@ -266,7 +266,7 @@ int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t l
         led->arr_num = 0;
         if (agile_led_get_light_arr(led, light_mode) < 0) {
             agile_led_stop(led);
-            rt_mutex_release(lock_mtx);
+            rt_mutex_release(_mtx);
             return -RT_ERROR;
         }
     }
@@ -274,7 +274,7 @@ int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t l
     led->arr_index = 0;
     led->loop_cnt = led->loop_init;
     led->tick_timeout = rt_tick_get();
-    rt_mutex_release(lock_mtx);
+    rt_mutex_release(_mtx);
     return RT_EOK;
 }
 
@@ -288,9 +288,9 @@ int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t l
 int agile_led_set_compelete_callback(agile_led_t *led, void (*compelete)(agile_led_t *led))
 {
     RT_ASSERT(led);
-    rt_mutex_take(lock_mtx, RT_WAITING_FOREVER);
+    rt_mutex_take(_mtx, RT_WAITING_FOREVER);
     led->compelete = compelete;
-    rt_mutex_release(lock_mtx);
+    rt_mutex_release(_mtx);
     return RT_EOK;
 }
 
@@ -332,8 +332,8 @@ static void led_process(void *parameter)
 {
     rt_slist_t *node;
     while (1) {
-        rt_mutex_take(lock_mtx, RT_WAITING_FOREVER);
-        rt_slist_for_each(node, &(agile_led_list))
+        rt_mutex_take(_mtx, RT_WAITING_FOREVER);
+        rt_slist_for_each(node, &_slist_head)
         {
             agile_led_t *led = rt_slist_entry(node, agile_led_t, slist);
             if (led->loop_cnt == 0) {
@@ -341,7 +341,7 @@ static void led_process(void *parameter)
                 if (led->compelete) {
                     led->compelete(led);
                 }
-                node = &agile_led_list;
+                node = &_slist_head;
                 continue;
             }
         __repeat:
@@ -365,7 +365,7 @@ static void led_process(void *parameter)
                 }
             }
         }
-        rt_mutex_release(lock_mtx);
+        rt_mutex_release(_mtx);
         rt_thread_mdelay(5);
     }
 }
@@ -379,21 +379,22 @@ static void led_process(void *parameter)
 static int agile_led_init(void)
 {
     rt_thread_t tid = RT_NULL;
-    lock_mtx = rt_mutex_create("led_mtx", RT_IPC_FLAG_FIFO);
-    if (lock_mtx == RT_NULL) {
-        LOG_E("Agile led initialize failed! lock_mtx create failed!");
+    _mtx = rt_mutex_create("led_mtx", RT_IPC_FLAG_FIFO);
+    if (_mtx == RT_NULL) {
+        LOG_E("Agile Led initialize failed! Mtx create failed!");
         return -RT_ENOMEM;
     }
 
     tid = rt_thread_create("agile_led", led_process, RT_NULL,
                            PKG_AGILE_LED_THREAD_STACK_SIZE, PKG_AGILE_LED_THREAD_PRIORITY, 100);
     if (tid == RT_NULL) {
-        LOG_E("Agile led initialize failed! thread create failed!");
-        rt_mutex_delete(lock_mtx);
+        LOG_E("Agile Led initialize failed! Thread create failed!");
+        rt_mutex_delete(_mtx);
         return -RT_ENOMEM;
     }
     rt_thread_startup(tid);
-    is_initialized = 1;
+    _is_init = 1;
+
     return RT_EOK;
 }
 
