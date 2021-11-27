@@ -40,11 +40,17 @@
  * @}
  */
 
-/** @defgroup AGILE_LED_Configuration Agile Led Configuration
+#ifdef PKG_AGILE_LED_USING_THREAD_AUTO_INIT
+
+/** @defgroup AGILE_LED_Thread_Auto_Init Agile Led Thread Auto Init
  * @{
  */
 
-/** @name Agile Led 配置
+/** @defgroup AGILE_LED_Thread_Auto_Init_Configuration Agile Led Thread Auto Init Configuration
+ * @{
+ */
+
+/** @name Agile Led 自动初始化线程配置
  * @{
  */
 #ifndef PKG_AGILE_LED_THREAD_STACK_SIZE
@@ -62,25 +68,30 @@
  * @}
  */
 
+/**
+ * @}
+ */
+
+#endif /* PKG_AGILE_LED_USING_THREAD_AUTO_INIT */
+
 /** @defgroup AGILE_LED_Private_Variables Agile Led Private Variables
  * @{
  */
-static rt_slist_t _slist_head = RT_SLIST_OBJECT_INIT(_slist_head);       /**< Agile Led 链表头节点 */
-static rt_mutex_t _mtx = RT_NULL;                                        /**< Agile Led 互斥锁 */
+ALIGN(RT_ALIGN_SIZE)
+static rt_slist_t _slist_head = RT_SLIST_OBJECT_INIT(_slist_head); /**< Agile Led 链表头节点 */
+static struct rt_mutex _mtx;                                       /**< Agile Led 互斥锁 */
 static uint8_t _is_init = 0;                                       /**< Agile Led 初始化完成标志 */
+
+#ifdef PKG_AGILE_LED_USING_THREAD_AUTO_INIT
+static struct rt_thread _thread;                               /**< Agile Led 线程控制块 */
+static uint8_t _thread_stack[PKG_AGILE_LED_THREAD_STACK_SIZE]; /**< Agile Led 线程堆栈 */
+#endif
 /**
  * @}
  */
 
 /** @defgroup AGILE_LED_Private_Functions Agile Led Private Functions
  * @{
- */
-static void agile_led_default_compelete_callback(agile_led_t *led);
-static int agile_led_get_light_arr(agile_led_t *led, const char *light_mode);
-static void led_process(void *parameter);
-static int agile_led_init(void);
-/**
- * @}
  */
 
 /**
@@ -133,6 +144,14 @@ static int agile_led_get_light_arr(agile_led_t *led, const char *light_mode)
 }
 
 /**
+ * @}
+ */
+
+/** @defgroup AGILE_LED_Exported_Functions Agile Led Exported Functions
+ * @{
+ */
+
+/**
  * @brief   创建 Agile Led 对象
  * @param   pin 控制 led 的引脚
  * @param   active_logic led 有效电平 (PIN_HIGH/PIN_LOW)
@@ -145,9 +164,10 @@ static int agile_led_get_light_arr(agile_led_t *led, const char *light_mode)
 agile_led_t *agile_led_create(uint32_t pin, uint32_t active_logic, const char *light_mode, int32_t loop_cnt)
 {
     if (!_is_init) {
-        LOG_E("Agile Led haven't initialized!");
+        LOG_E("Please call agile_led_env_init first.");
         return RT_NULL;
     }
+
     agile_led_t *led = (agile_led_t *)rt_malloc(sizeof(agile_led_t));
     if (led == RT_NULL)
         return RT_NULL;
@@ -183,10 +203,10 @@ agile_led_t *agile_led_create(uint32_t pin, uint32_t active_logic, const char *l
 int agile_led_delete(agile_led_t *led)
 {
     RT_ASSERT(led);
-    rt_mutex_take(_mtx, RT_WAITING_FOREVER);
+    rt_mutex_take(&_mtx, RT_WAITING_FOREVER);
     rt_slist_remove(&_slist_head, &(led->slist));
     led->slist.next = RT_NULL;
-    rt_mutex_release(_mtx);
+    rt_mutex_release(&_mtx);
     if (led->light_arr) {
         rt_free(led->light_arr);
         led->light_arr = RT_NULL;
@@ -205,13 +225,13 @@ int agile_led_delete(agile_led_t *led)
 int agile_led_start(agile_led_t *led)
 {
     RT_ASSERT(led);
-    rt_mutex_take(_mtx, RT_WAITING_FOREVER);
+    rt_mutex_take(&_mtx, RT_WAITING_FOREVER);
     if (led->active) {
-        rt_mutex_release(_mtx);
+        rt_mutex_release(&_mtx);
         return -RT_ERROR;
     }
     if ((led->light_arr == RT_NULL) || (led->arr_num == 0)) {
-        rt_mutex_release(_mtx);
+        rt_mutex_release(&_mtx);
         return -RT_ERROR;
     }
     led->arr_index = 0;
@@ -219,7 +239,7 @@ int agile_led_start(agile_led_t *led)
     led->tick_timeout = rt_tick_get();
     rt_slist_append(&_slist_head, &(led->slist));
     led->active = 1;
-    rt_mutex_release(_mtx);
+    rt_mutex_release(&_mtx);
     return RT_EOK;
 }
 
@@ -232,15 +252,15 @@ int agile_led_start(agile_led_t *led)
 int agile_led_stop(agile_led_t *led)
 {
     RT_ASSERT(led);
-    rt_mutex_take(_mtx, RT_WAITING_FOREVER);
+    rt_mutex_take(&_mtx, RT_WAITING_FOREVER);
     if (!led->active) {
-        rt_mutex_release(_mtx);
+        rt_mutex_release(&_mtx);
         return RT_EOK;
     }
     rt_slist_remove(&_slist_head, &(led->slist));
     led->slist.next = RT_NULL;
     led->active = 0;
-    rt_mutex_release(_mtx);
+    rt_mutex_release(&_mtx);
     return RT_EOK;
 }
 
@@ -256,7 +276,7 @@ int agile_led_stop(agile_led_t *led)
 int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t loop_cnt)
 {
     RT_ASSERT(led);
-    rt_mutex_take(_mtx, RT_WAITING_FOREVER);
+    rt_mutex_take(&_mtx, RT_WAITING_FOREVER);
 
     if (light_mode) {
         if (led->light_arr) {
@@ -266,7 +286,7 @@ int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t l
         led->arr_num = 0;
         if (agile_led_get_light_arr(led, light_mode) < 0) {
             agile_led_stop(led);
-            rt_mutex_release(_mtx);
+            rt_mutex_release(&_mtx);
             return -RT_ERROR;
         }
     }
@@ -274,7 +294,7 @@ int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t l
     led->arr_index = 0;
     led->loop_cnt = led->loop_init;
     led->tick_timeout = rt_tick_get();
-    rt_mutex_release(_mtx);
+    rt_mutex_release(&_mtx);
     return RT_EOK;
 }
 
@@ -288,9 +308,9 @@ int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t l
 int agile_led_set_compelete_callback(agile_led_t *led, void (*compelete)(agile_led_t *led))
 {
     RT_ASSERT(led);
-    rt_mutex_take(_mtx, RT_WAITING_FOREVER);
+    rt_mutex_take(&_mtx, RT_WAITING_FOREVER);
     led->compelete = compelete;
-    rt_mutex_release(_mtx);
+    rt_mutex_release(&_mtx);
     return RT_EOK;
 }
 
@@ -325,83 +345,122 @@ void agile_led_off(agile_led_t *led)
 }
 
 /**
- * @brief   Agile Led 线程
- * @param   parameter 线程参数
+ * @brief   处理所有 Agile Led 对象
+ * @note    如果使能 PKG_AGILE_LED_USING_THREAD_AUTO_INIT, 这个函数将被自动初始化线程 5ms 周期调用。
+ *          用户调用需要创建一个线程并将这个函数放入 while (1) {} 中。
  */
-static void led_process(void *parameter)
+void agile_led_process(void)
 {
     rt_slist_t *node;
-    while (1) {
-        rt_mutex_take(_mtx, RT_WAITING_FOREVER);
-        rt_slist_for_each(node, &_slist_head)
-        {
-            agile_led_t *led = rt_slist_entry(node, agile_led_t, slist);
-            if (led->loop_cnt == 0) {
-                agile_led_stop(led);
-                if (led->compelete) {
-                    led->compelete(led);
-                }
-                node = &_slist_head;
-                continue;
+
+    rt_mutex_take(&_mtx, RT_WAITING_FOREVER);
+    rt_slist_for_each(node, &_slist_head)
+    {
+        agile_led_t *led = rt_slist_entry(node, agile_led_t, slist);
+        if (led->loop_cnt == 0) {
+            agile_led_stop(led);
+            if (led->compelete) {
+                led->compelete(led);
             }
-        __repeat:
-            if ((rt_tick_get() - led->tick_timeout) < (RT_TICK_MAX / 2)) {
-                if (led->arr_index < led->arr_num) {
-                    if (led->light_arr[led->arr_index] == 0) {
-                        led->arr_index++;
-                        goto __repeat;
-                    }
-                    if (led->arr_index % 2) {
-                        agile_led_off(led);
-                    } else {
-                        agile_led_on(led);
-                    }
-                    led->tick_timeout = rt_tick_get() + rt_tick_from_millisecond(led->light_arr[led->arr_index]);
+
+            node = &_slist_head;
+            continue;
+        }
+    __repeat:
+        if ((rt_tick_get() - led->tick_timeout) < (RT_TICK_MAX / 2)) {
+            if (led->arr_index < led->arr_num) {
+                if (led->light_arr[led->arr_index] == 0) {
                     led->arr_index++;
-                } else {
-                    led->arr_index = 0;
-                    if (led->loop_cnt > 0)
-                        led->loop_cnt--;
+                    goto __repeat;
                 }
+                if (led->arr_index % 2) {
+                    agile_led_off(led);
+                } else {
+                    agile_led_on(led);
+                }
+                led->tick_timeout = rt_tick_get() + rt_tick_from_millisecond(led->light_arr[led->arr_index]);
+                led->arr_index++;
+            } else {
+                led->arr_index = 0;
+                if (led->loop_cnt > 0)
+                    led->loop_cnt--;
             }
         }
-        rt_mutex_release(_mtx);
+    }
+    rt_mutex_release(&_mtx);
+}
+
+/**
+ * @brief   Agile Led 环境初始化
+ * @note    使用其他 API 之前该函数必须被调用。
+ *          如果使能 PKG_AGILE_LED_USING_THREAD_AUTO_INIT, 这个函数将被自动调用。
+ */
+void agile_led_env_init(void)
+{
+    if (_is_init)
+        return;
+
+    rt_mutex_init(&_mtx, "led_mtx", RT_IPC_FLAG_FIFO);
+
+    _is_init = 1;
+}
+
+/**
+ * @}
+ */
+
+#ifdef PKG_AGILE_LED_USING_THREAD_AUTO_INIT
+
+/** @addtogroup AGILE_LED_Thread_Auto_Init
+ * @{
+ */
+
+/** @defgroup AGILE_LED_Thread_Auto_Init_Functions Agile Led Thread Auto Init Functions
+ * @{
+ */
+
+/**
+ * @brief   gile Led 内部线程函数入口
+ * @param   parameter 线程参数
+ */
+static void agile_led_auto_thread_entry(void *parameter)
+{
+    while (1) {
+        agile_led_process();
         rt_thread_mdelay(5);
     }
 }
 
 /**
- * @brief   Agile Led 自动初始化
+ * @brief   Agile Led 内部线程初始化
  * @return
  * - RT_EOK:成功
- * - !=RT_EOK:失败
  */
-static int agile_led_init(void)
+static int agile_led_auto_thread_init(void)
 {
-    rt_thread_t tid = RT_NULL;
-    _mtx = rt_mutex_create("led_mtx", RT_IPC_FLAG_FIFO);
-    if (_mtx == RT_NULL) {
-        LOG_E("Agile Led initialize failed! Mtx create failed!");
-        return -RT_ENOMEM;
-    }
+    agile_led_env_init();
 
-    tid = rt_thread_create("agile_led", led_process, RT_NULL,
-                           PKG_AGILE_LED_THREAD_STACK_SIZE, PKG_AGILE_LED_THREAD_PRIORITY, 100);
-    if (tid == RT_NULL) {
-        LOG_E("Agile Led initialize failed! Thread create failed!");
-        rt_mutex_delete(_mtx);
-        return -RT_ENOMEM;
-    }
-    rt_thread_startup(tid);
-    _is_init = 1;
+    rt_thread_init(&_thread,
+                   "agled",
+                   agile_led_auto_thread_entry,
+                   RT_NULL,
+                   &_thread_stack[0],
+                   sizeof(_thread_stack),
+                   PKG_AGILE_LED_THREAD_PRIORITY,
+                   100);
+
+    rt_thread_startup(&_thread);
 
     return RT_EOK;
 }
+INIT_APP_EXPORT(agile_led_auto_thread_init);
 
-/** @addtogroup RT_Thread_Auto_Init_APP
- * @{
- */
-INIT_APP_EXPORT(agile_led_init);
 /**
  * @}
  */
+
+/**
+ * @}
+ */
+
+#endif /* PKG_AGILE_LED_USING_THREAD_AUTO_INIT */

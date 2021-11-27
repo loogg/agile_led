@@ -48,7 +48,7 @@ struct agile_led {
  * @}
  */
 
-/** @defgroup AGILE_LED_Exported_Functions Agile Led Exported Functions
+/** @addtogroup AGILE_LED_Exported_Functions
  * @{
  */
 agile_led_t *agile_led_create(uint32_t pin, uint32_t active_logic, const char *light_mode, int32_t loop_cnt);
@@ -60,22 +60,8 @@ int agile_led_set_compelete_callback(agile_led_t *led, void (*compelete)(agile_l
 void agile_led_toggle(agile_led_t *led);
 void agile_led_on(agile_led_t *led);
 void agile_led_off(agile_led_t *led);
-/**
- * @}
- */
-
-/** @defgroup RT_Thread_Auto_Init RT-Thread Auto Init
- * @{
- */
-
-/** @defgroup RT_Thread_Auto_Init_APP RT-Thread Auto Init APP
- * @{
- */
-
-/**
- * @}
- */
-
+void agile_led_process(void);
+void agile_led_env_init(void);
 /**
  * @}
  */

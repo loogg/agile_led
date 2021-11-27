@@ -15,3 +15,4 @@
 * 修改变量定义为标准数据类型
 * 修改 `example` 代码, 引脚号从命令行输入
 * 修改静态变量命名
+* 增加 `PKG_AGILE_LED_USING_THREAD_AUTO_INIT` 配置，可自由决定是否自动创建线程
