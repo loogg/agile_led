@@ -40,6 +40,15 @@
  * @}
  */
 
+/** @defgroup AGILE_LED_Private_Macros Agile Led Private Macros
+ * @{
+ */
+#define AGILE_LED_TYPE_DYNAMIC  0x00    /**< 动态类型 */
+#define AGILE_LED_TYPE_STATIC   0x01    /**< 静态类型 */
+/**
+ * @}
+ */
+
 #ifdef PKG_AGILE_LED_USING_THREAD_AUTO_INIT
 
 /** @defgroup AGILE_LED_Thread_Auto_Init Agile Led Thread Auto Init
@@ -83,8 +92,8 @@ static struct rt_mutex _mtx;                                       /**< Agile Le
 static uint8_t _is_init = 0;                                       /**< Agile Led 初始化完成标志 */
 
 #ifdef PKG_AGILE_LED_USING_THREAD_AUTO_INIT
-static struct rt_thread _thread;                               /**< Agile Led 线程控制块 */
-static uint8_t _thread_stack[PKG_AGILE_LED_THREAD_STACK_SIZE]; /**< Agile Led 线程堆栈 */
+static struct rt_thread _thread;                                   /**< Agile Led 线程控制块 */
+static uint8_t _thread_stack[PKG_AGILE_LED_THREAD_STACK_SIZE];     /**< Agile Led 线程堆栈 */
 #endif
 /**
  * @}
@@ -104,8 +113,10 @@ static void agile_led_default_compelete_callback(agile_led_t *led)
     LOG_D("led pin:%d compeleted.", led->pin);
 }
 
+#ifdef RT_USING_HEAP
+
 /**
- * @brief   获取 Agile Led 对象闪烁模式
+ * @brief   解析字符串获取 Agile Led 对象 light_arr 和 arr_num
  * @param   led Agile Led 对象指针
  * @param   light_mode 闪烁模式字符串
  * @return
@@ -115,8 +126,10 @@ static void agile_led_default_compelete_callback(agile_led_t *led)
 static int agile_led_get_light_arr(agile_led_t *led, const char *light_mode)
 {
     RT_ASSERT(led);
+    RT_ASSERT(led->type == AGILE_LED_TYPE_DYNAMIC);
     RT_ASSERT(led->light_arr == RT_NULL);
     RT_ASSERT(led->arr_num == 0);
+
     const char *ptr = light_mode;
     while (*ptr) {
         if (*ptr == ',')
@@ -129,19 +142,25 @@ static int agile_led_get_light_arr(agile_led_t *led, const char *light_mode)
     if (led->arr_num == 0)
         return -RT_ERROR;
 
-    led->light_arr = (uint32_t *)rt_malloc(led->arr_num * sizeof(uint32_t));
-    if (led->light_arr == RT_NULL)
+    uint32_t *light_arr = rt_malloc(led->arr_num * sizeof(uint32_t));
+    if (light_arr == RT_NULL)
         return -RT_ENOMEM;
-    rt_memset(led->light_arr, 0, led->arr_num * sizeof(uint32_t));
+    rt_memset(light_arr, 0, led->arr_num * sizeof(uint32_t));
+
     ptr = light_mode;
     for (uint32_t i = 0; i < led->arr_num; i++) {
-        led->light_arr[i] = atoi(ptr);
+        light_arr[i] = atoi(ptr);
         ptr = strchr(ptr, ',');
         if (ptr)
             ptr++;
     }
+
+    led->light_arr = light_arr;
+
     return RT_EOK;
 }
+
+#endif /* RT_USING_HEAP */
 
 /**
  * @}
@@ -150,6 +169,8 @@ static int agile_led_get_light_arr(agile_led_t *led, const char *light_mode)
 /** @defgroup AGILE_LED_Exported_Functions Agile Led Exported Functions
  * @{
  */
+
+#ifdef RT_USING_HEAP
 
 /**
  * @brief   创建 Agile Led 对象
@@ -171,6 +192,8 @@ agile_led_t *agile_led_create(uint32_t pin, uint32_t active_logic, const char *l
     agile_led_t *led = (agile_led_t *)rt_malloc(sizeof(agile_led_t));
     if (led == RT_NULL)
         return RT_NULL;
+
+    led->type = AGILE_LED_TYPE_DYNAMIC;
     led->active = 0;
     led->pin = pin;
     led->active_logic = active_logic;
@@ -178,11 +201,12 @@ agile_led_t *agile_led_create(uint32_t pin, uint32_t active_logic, const char *l
     led->arr_num = 0;
     led->arr_index = 0;
     if (light_mode) {
-        if (agile_led_get_light_arr(led, light_mode) < 0) {
+        if (agile_led_get_light_arr(led, light_mode) != RT_EOK) {
             rt_free(led);
             return RT_NULL;
         }
     }
+
     led->loop_init = loop_cnt;
     led->loop_cnt = led->loop_init;
     led->tick_timeout = rt_tick_get();
@@ -191,6 +215,7 @@ agile_led_t *agile_led_create(uint32_t pin, uint32_t active_logic, const char *l
 
     rt_pin_mode(pin, PIN_MODE_OUTPUT);
     rt_pin_write(pin, !active_logic);
+
     return led;
 }
 
@@ -203,15 +228,140 @@ agile_led_t *agile_led_create(uint32_t pin, uint32_t active_logic, const char *l
 int agile_led_delete(agile_led_t *led)
 {
     RT_ASSERT(led);
+    RT_ASSERT(led->type == AGILE_LED_TYPE_DYNAMIC);
+
     rt_mutex_take(&_mtx, RT_WAITING_FOREVER);
     rt_slist_remove(&_slist_head, &(led->slist));
     led->slist.next = RT_NULL;
     rt_mutex_release(&_mtx);
+
     if (led->light_arr) {
-        rt_free(led->light_arr);
+        rt_free((uint32_t *)led->light_arr);
         led->light_arr = RT_NULL;
     }
     rt_free(led);
+
+    return RT_EOK;
+}
+
+/**
+ * @brief   动态设置 Agile Led 对象的模式
+ * @note    Agile Led 对象必须是使用 agile_led_create 创建的
+ * @param   led Agile Led 对象指针
+ * @param   light_mode 闪烁模式字符串
+ * @param   loop_cnt 循环次数 (负数为永久循环)
+ * @return
+ * - RT_EOK:成功
+ * - !=RT_EOK:异常
+ */
+int agile_led_dynamic_change_light_mode(agile_led_t *led, const char *light_mode, int32_t loop_cnt)
+{
+    RT_ASSERT(led);
+    RT_ASSERT(led->type == AGILE_LED_TYPE_DYNAMIC);
+
+    rt_mutex_take(&_mtx, RT_WAITING_FOREVER);
+    if (light_mode) {
+        if (led->light_arr) {
+            rt_free((uint32_t *)led->light_arr);
+            led->light_arr = RT_NULL;
+        }
+        led->arr_num = 0;
+        if (agile_led_get_light_arr(led, light_mode) != RT_EOK) {
+            agile_led_stop(led);
+            rt_mutex_release(&_mtx);
+            return -RT_ERROR;
+        }
+    }
+    led->loop_init = loop_cnt;
+    led->arr_index = 0;
+    led->loop_cnt = led->loop_init;
+    led->tick_timeout = rt_tick_get();
+    rt_mutex_release(&_mtx);
+
+    return RT_EOK;
+}
+
+/**
+ * @brief   动态设置 Agile Led 对象的模式
+ * @note    该 API 已被 agile_led_dynamic_change_light_mode 替代，目前版本仍兼容，但不保证后续版本不会抛弃
+ * @param   led Agile Led 对象指针
+ * @param   light_mode 闪烁模式字符串
+ * @param   loop_cnt 循环次数 (负数为永久循环)
+ * @return
+ * - RT_EOK:成功
+ * - !=RT_EOK:异常
+ */
+int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t loop_cnt)
+{
+    return agile_led_dynamic_change_light_mode(led, light_mode, loop_cnt);
+}
+
+#endif /* RT_USING_HEAP */
+
+/**
+ * @brief   初始化 Agile Led 对象
+ * @param   led Agile Led 对象指针
+ * @param   pin 控制 led 的引脚
+ * @param   active_logic led 有效电平 (PIN_HIGH/PIN_LOW)
+ * @param   light_array 闪烁数组
+ * @param   array_size 闪烁数组数目
+ * @param   loop_cnt 循环次数 (负数为永久循环)
+ * @return
+ * - RT_EOK:成功
+ * - !=RT_EOK:异常
+ */
+int agile_led_init(agile_led_t *led, uint32_t pin, uint32_t active_logic, const uint32_t *light_array, int array_size, int32_t loop_cnt)
+{
+    RT_ASSERT(led);
+
+    if (!_is_init) {
+        LOG_E("Please call agile_led_env_init first.");
+        return -RT_ERROR;
+    }
+
+    led->type = AGILE_LED_TYPE_STATIC;
+    led->active = 0;
+    led->pin = pin;
+    led->active_logic = active_logic;
+    led->light_arr = light_array;
+    led->arr_num = array_size;
+    led->arr_index = 0;
+    led->loop_init = loop_cnt;
+    led->loop_cnt = led->loop_init;
+    led->tick_timeout = rt_tick_get();
+    led->compelete = agile_led_default_compelete_callback;
+    rt_slist_init(&(led->slist));
+
+    rt_pin_mode(pin, PIN_MODE_OUTPUT);
+    rt_pin_write(pin, !active_logic);
+
+    return RT_EOK;
+}
+
+/**
+ * @brief   静态设置 Agile Led 对象的模式
+ * @note    Agile Led 对象必须是静态的
+ * @param   led Agile Led 对象指针
+ * @param   light_array 闪烁数组
+ * @param   array_size 闪烁数组数目
+ * @param   loop_cnt 循环次数 (负数为永久循环)
+ * @return
+ * - RT_EOK:成功
+ */
+int agile_led_static_change_light_mode(agile_led_t *led, const uint32_t *light_array, int array_size, int32_t loop_cnt)
+{
+    RT_ASSERT(led);
+    RT_ASSERT(led->type == AGILE_LED_TYPE_STATIC);
+
+    rt_mutex_take(&_mtx, RT_WAITING_FOREVER);
+    led->light_arr = light_array;
+    led->arr_num = array_size;
+    led->arr_index = 0;
+    led->loop_init = loop_cnt;
+    led->loop_cnt = led->loop_init;
+    led->tick_timeout = rt_tick_get();
+    rt_mutex_release(&_mtx);
+
     return RT_EOK;
 }
 
@@ -225,6 +375,7 @@ int agile_led_delete(agile_led_t *led)
 int agile_led_start(agile_led_t *led)
 {
     RT_ASSERT(led);
+
     rt_mutex_take(&_mtx, RT_WAITING_FOREVER);
     if (led->active) {
         rt_mutex_release(&_mtx);
@@ -240,6 +391,7 @@ int agile_led_start(agile_led_t *led)
     rt_slist_append(&_slist_head, &(led->slist));
     led->active = 1;
     rt_mutex_release(&_mtx);
+
     return RT_EOK;
 }
 
@@ -252,6 +404,7 @@ int agile_led_start(agile_led_t *led)
 int agile_led_stop(agile_led_t *led)
 {
     RT_ASSERT(led);
+
     rt_mutex_take(&_mtx, RT_WAITING_FOREVER);
     if (!led->active) {
         rt_mutex_release(&_mtx);
@@ -261,40 +414,7 @@ int agile_led_stop(agile_led_t *led)
     led->slist.next = RT_NULL;
     led->active = 0;
     rt_mutex_release(&_mtx);
-    return RT_EOK;
-}
 
-/**
- * @brief   设置 Agile Led 对象的模式
- * @param   led Agile Led 对象指针
- * @param   light_mode 闪烁模式字符串
- * @param   loop_cnt 循环次数 (负数为永久循环)
- * @return
- * - RT_EOK:成功
- * - !=RT_EOK:异常
- */
-int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t loop_cnt)
-{
-    RT_ASSERT(led);
-    rt_mutex_take(&_mtx, RT_WAITING_FOREVER);
-
-    if (light_mode) {
-        if (led->light_arr) {
-            rt_free(led->light_arr);
-            led->light_arr = RT_NULL;
-        }
-        led->arr_num = 0;
-        if (agile_led_get_light_arr(led, light_mode) < 0) {
-            agile_led_stop(led);
-            rt_mutex_release(&_mtx);
-            return -RT_ERROR;
-        }
-    }
-    led->loop_init = loop_cnt;
-    led->arr_index = 0;
-    led->loop_cnt = led->loop_init;
-    led->tick_timeout = rt_tick_get();
-    rt_mutex_release(&_mtx);
     return RT_EOK;
 }
 
@@ -308,9 +428,11 @@ int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t l
 int agile_led_set_compelete_callback(agile_led_t *led, void (*compelete)(agile_led_t *led))
 {
     RT_ASSERT(led);
+
     rt_mutex_take(&_mtx, RT_WAITING_FOREVER);
     led->compelete = compelete;
     rt_mutex_release(&_mtx);
+
     return RT_EOK;
 }
 
@@ -321,6 +443,7 @@ int agile_led_set_compelete_callback(agile_led_t *led, void (*compelete)(agile_l
 void agile_led_toggle(agile_led_t *led)
 {
     RT_ASSERT(led);
+
     rt_pin_write(led->pin, !rt_pin_read(led->pin));
 }
 
@@ -331,6 +454,7 @@ void agile_led_toggle(agile_led_t *led)
 void agile_led_on(agile_led_t *led)
 {
     RT_ASSERT(led);
+
     rt_pin_write(led->pin, led->active_logic);
 }
 
@@ -341,6 +465,7 @@ void agile_led_on(agile_led_t *led)
 void agile_led_off(agile_led_t *led)
 {
     RT_ASSERT(led);
+
     rt_pin_write(led->pin, !led->active_logic);
 }
 
@@ -420,7 +545,7 @@ void agile_led_env_init(void)
  */
 
 /**
- * @brief   gile Led 内部线程函数入口
+ * @brief   Agile Led 内部线程函数入口
  * @param   parameter 线程参数
  */
 static void agile_led_auto_thread_entry(void *parameter)

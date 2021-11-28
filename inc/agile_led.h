@@ -32,10 +32,11 @@ typedef struct agile_led agile_led_t; /**< Agile Led 结构体 */
  * @brief   Agile Led 结构体
  */
 struct agile_led {
+    uint8_t type;                        /**< 对象类型 (静态或动态) */
     uint8_t active;                      /**< 激活标志 */
     uint32_t pin;                        /**< 控制引脚 */
     uint32_t active_logic;               /**< 有效电平 (PIN_HIGH/PIN_LOW) */
-    uint32_t *light_arr;                 /**< 闪烁数组 */
+    const uint32_t *light_arr;           /**< 闪烁数组 */
     uint32_t arr_num;                    /**< 数组元素数目 */
     uint32_t arr_index;                  /**< 数组索引 */
     int32_t loop_init;                   /**< 循环次数 */
@@ -51,11 +52,17 @@ struct agile_led {
 /** @addtogroup AGILE_LED_Exported_Functions
  * @{
  */
+#ifdef RT_USING_HEAP
 agile_led_t *agile_led_create(uint32_t pin, uint32_t active_logic, const char *light_mode, int32_t loop_cnt);
 int agile_led_delete(agile_led_t *led);
+int agile_led_dynamic_change_light_mode(agile_led_t *led, const char *light_mode, int32_t loop_cnt);
+int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t loop_cnt);
+#endif
+
+int agile_led_init(agile_led_t *led, uint32_t pin, uint32_t active_logic, const uint32_t *light_array, int array_size, int32_t loop_cnt);
+int agile_led_static_change_light_mode(agile_led_t *led, const uint32_t *light_array, int array_size, int32_t loop_cnt);
 int agile_led_start(agile_led_t *led);
 int agile_led_stop(agile_led_t *led);
-int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t loop_cnt);
 int agile_led_set_compelete_callback(agile_led_t *led, void (*compelete)(agile_led_t *led));
 void agile_led_toggle(agile_led_t *led);
 void agile_led_on(agile_led_t *led);
