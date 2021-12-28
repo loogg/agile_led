@@ -1,6 +1,6 @@
 # 更新记录
 
-## Agile Led 1.1 发布
+## Agile Led 1.1.0 发布
 
 ### 新功能
 
@@ -17,3 +17,13 @@
 * 修改 `example` 代码, 引脚号从命令行输入
 * 修改静态变量命名
 * 增加 `PKG_AGILE_LED_USING_THREAD_AUTO_INIT` 配置，可自由决定是否自动创建线程
+
+## Agile Led 1.1.1 发布
+
+### 修改
+
+2021-12-28：马龙伟
+
+* 修改 API 注释
+* 完善文档
+* 修改 example

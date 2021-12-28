@@ -2,8 +2,8 @@
  * @file    agile_led.h
  * @brief   Agile Led 软件包头文件
  * @author  马龙伟 (2544047213@qq.com)
- * @version 1.1
- * @date    2021-11-24
+ * @version 1.1.1
+ * @date    2021-12-28
  *
  * @attention
  *
@@ -26,6 +26,9 @@ extern "C" {
 /** @defgroup AGILE_LED_Exported_Types Agile Led Exported Types
  * @{
  */
+#define AGILE_LED_TYPE_DYNAMIC 0x00 /**< 动态类型 */
+#define AGILE_LED_TYPE_STATIC  0x01 /**< 静态类型 */
+
 typedef struct agile_led agile_led_t; /**< Agile Led 结构体 */
 
 /**

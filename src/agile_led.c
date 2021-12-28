@@ -2,8 +2,24 @@
  * @file    agile_led.c
  * @brief   Agile Led 软件包源文件
  * @author  马龙伟 (2544047213@qq.com)
- * @version 1.1
- * @date    2021-11-24
+ * @version 1.1.1
+ * @date    2021-12-28
+ *
+ @verbatim
+    使用：
+    如果未使能 PKG_AGILE_LED_USING_THREAD_AUTO_INIT:
+    1. agile_led_env_init 初始化环境
+    2. 创建一个线程，周期调用 agile_led_process，建议周期时间不要太长
+
+    - agile_led_create / agile_led_init 创建 / 初始化对象
+    - agile_led_start 启动运行
+    - agile_led_dynamic_change_light_mode / agile_led_static_change_light_mode 更改模式
+      该操作也可在启动运行前执行
+    - 如果需要感知对象执行结束，agile_led_set_compelete_callback 设置回调函数
+    - 过程中需要强制停止，使用 agile_led_stop
+    - agile_led_on / agile_led_off / agile_led_toggle 单独操作对象
+
+ @endverbatim
  *
  * @attention
  *
@@ -36,15 +52,6 @@
  * @}
  */
 
-/**
- * @}
- */
-
-/** @defgroup AGILE_LED_Private_Macros Agile Led Private Macros
- * @{
- */
-#define AGILE_LED_TYPE_DYNAMIC  0x00    /**< 动态类型 */
-#define AGILE_LED_TYPE_STATIC   0x01    /**< 静态类型 */
 /**
  * @}
  */
@@ -92,8 +99,8 @@ static struct rt_mutex _mtx;                                       /**< Agile Le
 static uint8_t _is_init = 0;                                       /**< Agile Led 初始化完成标志 */
 
 #ifdef PKG_AGILE_LED_USING_THREAD_AUTO_INIT
-static struct rt_thread _thread;                                   /**< Agile Led 线程控制块 */
-static uint8_t _thread_stack[PKG_AGILE_LED_THREAD_STACK_SIZE];     /**< Agile Led 线程堆栈 */
+static struct rt_thread _thread;                               /**< Agile Led 线程控制块 */
+static uint8_t _thread_stack[PKG_AGILE_LED_THREAD_STACK_SIZE]; /**< Agile Led 线程堆栈 */
 #endif
 /**
  * @}
@@ -119,9 +126,13 @@ static void agile_led_default_compelete_callback(agile_led_t *led)
  * @brief   解析字符串获取 Agile Led 对象 light_arr 和 arr_num
  * @param   led Agile Led 对象指针
  * @param   light_mode 闪烁模式字符串
- * @return
- * - RT_EOK:成功
- * - !=RT_EOK:异常
+ @verbatim
+    例子:
+    "100,200,100,200"
+    只支持正整数，按照亮灭亮灭规律
+
+ @endverbatim
+ * @return  RT_EOK:成功; !=RT_EOK:异常
  */
 static int agile_led_get_light_arr(agile_led_t *led, const char *light_mode)
 {
@@ -177,10 +188,14 @@ static int agile_led_get_light_arr(agile_led_t *led, const char *light_mode)
  * @param   pin 控制 led 的引脚
  * @param   active_logic led 有效电平 (PIN_HIGH/PIN_LOW)
  * @param   light_mode 闪烁模式字符串
+ @verbatim
+    例子:
+    "100,200,100,200"
+    只支持正整数，按照亮灭亮灭规律
+
+ @endverbatim
  * @param   loop_cnt 循环次数 (负数为永久循环)
- * @return
- * - !=RT_NULL:Agile Led 对象指针
- * - RT_NULL:异常
+ * @return  !=RT_NULL:Agile Led 对象指针; RT_NULL:异常
  */
 agile_led_t *agile_led_create(uint32_t pin, uint32_t active_logic, const char *light_mode, int32_t loop_cnt)
 {
@@ -222,8 +237,7 @@ agile_led_t *agile_led_create(uint32_t pin, uint32_t active_logic, const char *l
 /**
  * @brief   删除 Agile Led 对象
  * @param   led Agile Led 对象指针
- * @return
- * - RT_EOK:成功
+ * @return  RT_EOK:成功
  */
 int agile_led_delete(agile_led_t *led)
 {
@@ -249,10 +263,14 @@ int agile_led_delete(agile_led_t *led)
  * @note    Agile Led 对象必须是使用 agile_led_create 创建的
  * @param   led Agile Led 对象指针
  * @param   light_mode 闪烁模式字符串
+ @verbatim
+    例子:
+    "100,200,100,200"
+    只支持正整数，按照亮灭亮灭规律
+
+ @endverbatim
  * @param   loop_cnt 循环次数 (负数为永久循环)
- * @return
- * - RT_EOK:成功
- * - !=RT_EOK:异常
+ * @return  RT_EOK:成功; !=RT_EOK:异常
  */
 int agile_led_dynamic_change_light_mode(agile_led_t *led, const char *light_mode, int32_t loop_cnt)
 {
@@ -286,10 +304,14 @@ int agile_led_dynamic_change_light_mode(agile_led_t *led, const char *light_mode
  * @note    该 API 已被 agile_led_dynamic_change_light_mode 替代，目前版本仍兼容，但不保证后续版本不会抛弃
  * @param   led Agile Led 对象指针
  * @param   light_mode 闪烁模式字符串
+ @verbatim
+    例子:
+    "100,200,100,200"
+    只支持正整数，按照亮灭亮灭规律
+
+ @endverbatim
  * @param   loop_cnt 循环次数 (负数为永久循环)
- * @return
- * - RT_EOK:成功
- * - !=RT_EOK:异常
+ * @return  RT_EOK:成功; !=RT_EOK:异常
  */
 int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t loop_cnt)
 {
@@ -304,11 +326,15 @@ int agile_led_set_light_mode(agile_led_t *led, const char *light_mode, int32_t l
  * @param   pin 控制 led 的引脚
  * @param   active_logic led 有效电平 (PIN_HIGH/PIN_LOW)
  * @param   light_array 闪烁数组
+ @verbatim
+    例子:
+    [100, 200, 100, 200]
+    只支持正整数，按照亮灭亮灭规律
+
+ @endverbatim
  * @param   array_size 闪烁数组数目
  * @param   loop_cnt 循环次数 (负数为永久循环)
- * @return
- * - RT_EOK:成功
- * - !=RT_EOK:异常
+ * @return  RT_EOK:成功; !=RT_EOK:异常
  */
 int agile_led_init(agile_led_t *led, uint32_t pin, uint32_t active_logic, const uint32_t *light_array, int array_size, int32_t loop_cnt)
 {
@@ -343,10 +369,15 @@ int agile_led_init(agile_led_t *led, uint32_t pin, uint32_t active_logic, const 
  * @note    Agile Led 对象必须是静态的
  * @param   led Agile Led 对象指针
  * @param   light_array 闪烁数组
+ @verbatim
+    例子:
+    [100, 200, 100, 200]
+    只支持正整数，按照亮灭亮灭规律
+
+ @endverbatim
  * @param   array_size 闪烁数组数目
  * @param   loop_cnt 循环次数 (负数为永久循环)
- * @return
- * - RT_EOK:成功
+ * @return  RT_EOK:成功
  */
 int agile_led_static_change_light_mode(agile_led_t *led, const uint32_t *light_array, int array_size, int32_t loop_cnt)
 {
@@ -368,9 +399,7 @@ int agile_led_static_change_light_mode(agile_led_t *led, const uint32_t *light_a
 /**
  * @brief   启动 Agile Led 对象,根据设置的模式执行动作
  * @param   led Agile Led 对象指针
- * @return
- * - RT_EOK:成功
- * - !=RT_OK:异常
+ * @return  RT_EOK:成功; !=RT_OK:异常
  */
 int agile_led_start(agile_led_t *led)
 {
@@ -398,8 +427,7 @@ int agile_led_start(agile_led_t *led)
 /**
  * @brief   停止 Agile Led 对象
  * @param   led Agile Led 对象指针
- * @return
- * - RT_EOK:成功
+ * @return  RT_EOK:成功
  */
 int agile_led_stop(agile_led_t *led)
 {
@@ -422,8 +450,7 @@ int agile_led_stop(agile_led_t *led)
  * @brief   设置 Agile Led 对象操作完成的回调函数
  * @param   led Agile Led 对象指针
  * @param   compelete 操作完成回调函数
- * @return
- * - RT_EOK:成功
+ * @return  RT_EOK:成功
  */
 int agile_led_set_compelete_callback(agile_led_t *led, void (*compelete)(agile_led_t *led))
 {
@@ -558,8 +585,7 @@ static void agile_led_auto_thread_entry(void *parameter)
 
 /**
  * @brief   Agile Led 内部线程初始化
- * @return
- * - RT_EOK:成功
+ * @return  RT_EOK:成功
  */
 static int agile_led_auto_thread_init(void)
 {

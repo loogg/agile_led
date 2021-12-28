@@ -25,7 +25,7 @@
  <tbody>
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">Agile Led<span id="projectnumber">&#160;1.1</span>
+   <div id="projectname">Agile Led<span id="projectnumber">&#160;1.1.1</span>
    </div>
    <div id="projectbrief">A agile led package.</div>
   </td>
@@ -86,21 +86,21 @@ $(document).ready(function(){initNavTree('index.html',''); initResizable(); });
   <div class="headertitle"><div class="title">Agile Led </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p ><a class="anchor" id="md_C__Users_25440_Desktop_test_packages_agile_led_latest_README"></a> </p>
-<h1><a class="anchor" id="autotoc_md5"></a>
+<div class="textblock"><p ><a class="anchor" id="md_C__Users_longwei_ma_Desktop_test_packages_agile_led_README"></a> </p>
+<h1><a class="anchor" id="autotoc_md12"></a>
 1、介绍</h1>
 <p >Agile Led 是基于 RT-Thread 实现的 led 软件包，提供 led 操作的 API。</p>
-<h2><a class="anchor" id="autotoc_md6"></a>
-1.1 特性</h2>
+<h2><a class="anchor" id="autotoc_md13"></a>
+1.1、特性</h2>
 <ol type="1">
-<li>代码简洁易懂，充分使用RT-Thread提供的API</li>
+<li>代码简洁易懂，充分使用 RT-Thread 提供的 API</li>
 <li>详细注释</li>
 <li>线程安全</li>
 <li>断言保护</li>
-<li>API操作简单</li>
+<li>API 操作简单</li>
 </ol>
-<h2><a class="anchor" id="autotoc_md7"></a>
-1.2 目录结构</h2>
+<h2><a class="anchor" id="autotoc_md14"></a>
+1.2、目录结构</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">名称   </th><th class="markdownTableHeadNone">说明    </th></tr>
@@ -113,47 +113,39 @@ $(document).ready(function(){initNavTree('index.html',''); initResizable(); });
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">src   </td><td class="markdownTableBodyNone">源代码目录   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md8"></a>
-1.3 许可证</h2>
+<h2><a class="anchor" id="autotoc_md15"></a>
+1.3、许可证</h2>
 <p >Agile Led package 遵循 LGPLv2.1 许可，详见 <code>LICENSE</code> 文件。</p>
-<h2><a class="anchor" id="autotoc_md9"></a>
-1.4 依赖</h2>
+<h2><a class="anchor" id="autotoc_md16"></a>
+1.4、依赖</h2>
 <ul>
 <li>RT-Thread 3.0+</li>
 <li>RT-Thread 4.0+</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md10"></a>
+<h1><a class="anchor" id="autotoc_md17"></a>
 2、如何打开 Agile Led</h1>
 <p >使用 Agile Led package 需要在 RT-Thread 的包管理器中选择它，具体路径如下：</p>
 <div class="fragment"><div class="line">RT-Thread online packages</div>
 <div class="line">    peripheral libraries and drivers ---&gt;</div>
 <div class="line">        [*] agile_led: A agile led package</div>
 </div><!-- fragment --><p >然后让 RT-Thread 的包管理器自动更新，或者使用 <code>pkgs --update</code> 命令更新包到 BSP 中。</p>
-<h1><a class="anchor" id="autotoc_md11"></a>
+<h1><a class="anchor" id="autotoc_md18"></a>
 3、使用 Agile Led</h1>
 <ul>
-<li>在打开 Agile Led package 后，当进行 bsp 编译时，它会被加入到 bsp 工程中进行编译。</li>
-<li>文档请查看 <a href="./doc/doxygen/Agile_Led.chm">doc/doxygen/Agile_Led.chm</a></li>
+<li>帮助文档请查看 <a href="./doc/doxygen/Agile_Led.chm">doc/doxygen/Agile_Led.chm</a></li>
 </ul>
-<h2><a class="anchor" id="autotoc_md12"></a>
+<h2><a class="anchor" id="autotoc_md19"></a>
 3.1、示例</h2>
 <p >使用示例在 <a href="./examples">examples</a> 下。</p>
-<h2><a class="anchor" id="autotoc_md13"></a>
+<h2><a class="anchor" id="autotoc_md20"></a>
 3.2、Doxygen 文档生成</h2>
 <ul>
 <li>使用 <code>Doxywizard</code> 打开 <a href="./doc/doxygen/Doxyfile">Doxyfile</a> 运行，生成的文件在 <a href="./doc/doxygen/output">doxygen/output</a> 下。</li>
 <li>需要更改 <code>Graphviz</code> 路径。</li>
 <li><code>HTML</code> 生成未使用 <code>chm</code> 格式的，如果使能需要更改 <code>hhc.exe</code> 路径。</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md14"></a>
-4、注意事项</h1>
-<ol type="1">
-<li>调用 <code>agile_led_create</code> API创建完led对象后，调用其他API确保led对象创建成功，否则被断言。</li>
-<li>调用 <code>agile_led_create</code> 和 <code>agile_led_set_light_mode</code> API时，参数 <code>light_mode</code> 可以为RT_NULL。</li>
-<li><code>light_mode</code> 确保时字符串形式，如 <code>"100,50,10,60"</code> 或 <code>"100,50,10,60,"</code> ,只支持正整数，按照亮灭亮灭...规律。</li>
-</ol>
-<h1><a class="anchor" id="autotoc_md15"></a>
-5、联系方式 &amp; 感谢</h1>
+<h1><a class="anchor" id="autotoc_md21"></a>
+4、联系方式 &amp; 感谢</h1>
 <ul>
 <li>维护：马龙伟</li>
 <li>主页：<a href="https://github.com/loogg/agile_led">https://github.com/loogg/agile_led</a></li>

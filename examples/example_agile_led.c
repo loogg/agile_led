@@ -4,9 +4,9 @@
 #include <finsh.h>
 #endif
 
+#ifdef RT_USING_HEAP
+
 static agile_led_t *_dled = RT_NULL;
-static agile_led_t _sled;
-static uint32_t _sled_light_arr[10] = {100, 200};
 
 static void dled_create(int argc, char **argv)
 {
@@ -71,6 +71,11 @@ MSH_CMD_EXPORT(dled_start, start led);
 MSH_CMD_EXPORT(dled_stop, stop led);
 MSH_CMD_EXPORT(dled_set_mode, set led mode);
 #endif
+
+#endif /* RT_USING_HEAP */
+
+static agile_led_t _sled;
+static uint32_t _sled_light_arr[10] = {100, 200};
 
 static void sled_init(int argc, char **argv)
 {
