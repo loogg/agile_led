@@ -46,6 +46,20 @@ RT-Thread online packages
 
 - 帮助文档请查看 [doc/doxygen/Agile_Led.chm](./doc/doxygen/Agile_Led.chm)
 
+如果未使能 PKG_AGILE_LED_USING_THREAD_AUTO_INIT:
+
+1. agile_led_env_init 初始化环境
+
+2. 创建一个线程，周期调用 agile_led_process，建议周期时间不要太长
+
+- agile_led_create / agile_led_init 创建 / 初始化对象
+- agile_led_start 启动运行
+- agile_led_dynamic_change_light_mode / agile_led_static_change_light_mode 更改模式
+  该操作也可在启动运行前执行
+- 如果需要感知对象执行结束，agile_led_set_compelete_callback 设置回调函数
+- 过程中需要强制停止，使用 agile_led_stop
+- agile_led_on / agile_led_off / agile_led_toggle 单独操作对象
+
 ### 3.1、示例
 
 使用示例在 [examples](./examples) 下。
