@@ -134,6 +134,19 @@ $(document).ready(function(){initNavTree('index.html',''); initResizable(); });
 <ul>
 <li>帮助文档请查看 <a href="./doc/doxygen/Agile_Led.chm">doc/doxygen/Agile_Led.chm</a></li>
 </ul>
+<p >如果未使能 PKG_AGILE_LED_USING_THREAD_AUTO_INIT:</p>
+<ol type="1">
+<li>agile_led_env_init 初始化环境</li>
+<li>创建一个线程，周期调用 agile_led_process，建议周期时间不要太长</li>
+</ol>
+<ul>
+<li>agile_led_create / agile_led_init 创建 / 初始化对象</li>
+<li>agile_led_start 启动运行</li>
+<li>agile_led_dynamic_change_light_mode / agile_led_static_change_light_mode 更改模式 该操作也可在启动运行前执行</li>
+<li>如果需要感知对象执行结束，agile_led_set_compelete_callback 设置回调函数</li>
+<li>过程中需要强制停止，使用 agile_led_stop</li>
+<li>agile_led_on / agile_led_off / agile_led_toggle 单独操作对象</li>
+</ul>
 <h2><a class="anchor" id="autotoc_md19"></a>
 3.1、示例</h2>
 <p >使用示例在 <a href="./examples">examples</a> 下。</p>
