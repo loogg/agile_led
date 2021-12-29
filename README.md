@@ -55,7 +55,9 @@ RT-Thread online packages
 - agile_led_create / agile_led_init 创建 / 初始化对象
 - agile_led_start 启动运行
 - agile_led_dynamic_change_light_mode / agile_led_static_change_light_mode 更改模式
+
   该操作也可在启动运行前执行
+
 - 如果需要感知对象执行结束，agile_led_set_compelete_callback 设置回调函数
 - 过程中需要强制停止，使用 agile_led_stop
 - agile_led_on / agile_led_off / agile_led_toggle 单独操作对象
